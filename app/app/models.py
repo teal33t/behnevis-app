@@ -345,4 +345,4 @@ class Job(db.Model):
         return '<Job %r>' % self.id
     
     
-    
+from .finance.models import *
