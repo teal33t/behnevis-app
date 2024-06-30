@@ -4,33 +4,38 @@
     <div class="col-4">
         <div class="bg-white rounded p-4 card-shadow">
             <div class="mb-4 w-100 text-center">
-                <h4 class="flex-fill pb-4">
-                    تولید پست بلاگ</h4>
+                <h4 class="flex-fill pb-4">تولید پست بلاگ</h4>
             </div>
-            <form id="submission_form" class="form-group mb-4 mt-4" action="{{url_for('dashboard.article_blog')}}"
+            <form id="submission_form" class="form-group mb-4 mt-2" action="{{ url_for('dashboard.article_blog') }}"
                 method="post">
                 {{ form.hidden_tag() }}
-                <div class="form-group mb-4 mt-2">
+                <div class="form-group mb-2 mt-2">
                     <label for="user_topic" class="mb-2">{{ form.user_topic.label }}</label>
                     {{ form.user_topic(size=500, class_="form-control", style="max-height: 100px;" ) }}
-                    <div class="form-text">
-                        عنوان یا شرح موضوع پست بلاگ را وارد کنید.
+                    <div class="form-text">عنوان یا شرح موضوع پست بلاگ را وارد کنید.</div>
+                </div>
+                <div class="mb-4 text-center pt-4 pb-4">
+                    <div class="btn-group" role="group" aria-label="Article length toggle">
+                        {% for subfield in form.article_length %}
+                        <input type="radio" class="btn-check" id="{{ subfield.id }}" name="{{ subfield.name }}"
+                            value="{{ subfield.data }}" {% if subfield.checked %} checked {% endif %}>
+                        <label class="btn btn-outline-primary" for="{{ subfield.id }}" data-toggle="tooltip"
+                            title="{% if subfield.data == 'long' %}۴۰۰۰ تا ۵۰۰۰ کلمه{% else %}تا ۴۰۰۰ کلمه{% endif %}">
+                            {{ subfield.label.text }}
+                        </label>
+                        {% endfor %}
                     </div>
                 </div>
-
                 <div class="mb-4 mt-2 pb-4">
                     <div class="input-group">
-                      <span class="input-group-text" id="basic-addon3">{{ form.lang.label }}</span>
-                      {{ form.lang(class_="form-control", aria_describedby="basic-addon3 lang-addon") }}
+                        <span class="input-group-text" id="basic-addon3">{{ form.lang.label }}</span>
+                        {{ form.lang(class_="form-control", aria_describedby="basic-addon3 lang-addon") }}
                     </div>
                 </div>
-                  
                 <div class="form-group mb-4 mt-2 pb-4">
                     <label for="tags" class="mb-2">{{ form.tags.label }}</label>
                     {{ form.tags(size=40, id="tags-input", class="form-control") }}
-                    <div class="form-text">
-                        پس از وارد کردن هر کلمه Enter بزنید.
-                    </div>
+                    <div class="form-text">پس از وارد کردن هر کلمه Enter بزنید.</div>
                 </div>
                 <div class="form-group text-center mt-4">
                     {{ form.submit(class="btn btn-primary text-white w-50", id="submit-form") }}
@@ -39,6 +44,96 @@
         </div>
     </div>
     <div class="col-8">
+        <div class="row rounded  mb-2">
+            {% if content %}
+            {% if content.job.job_status == "SUCCESS" %}
+
+            <div class="col-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text card-shadow" id="inputGroup-sizing-default">تعداد کلمات</span>
+                    <input type="text" class="form-control text-center text-primary-emphasis bg-light-subtle card-shadow" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default" value="{{ content.word_count | to_persian_num }}"
+                        disabled>
+                </div>
+            </div>
+            <div class="col-5">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-sizing-default">تاریخ تولید</span>
+                    <input type="text" class="form-control text-center text-primary-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default"
+                        value="{{ content.timestamp | gregorian_to_jalali_detail }}" disabled>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-sizing-default">
+                        مدت
+                    </span>
+                    <input type="text" class="form-control text-center text-primary-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default"
+                        value="{{ content.job.running_duration | convert_seconds_to_min_sec }}" disabled>
+                </div>
+            </div>
+            {% else %}
+
+
+            <div class="col-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-sizing-default">تعداد کلمات</span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default" id="word-count" value="-" disabled>
+                </div>
+            </div>
+            <div class="col-5">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-sizing-default">تاریخ تولید</span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default"
+                        value="{{ content.timestamp | gregorian_to_jalali_detail }}" disabled>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-sizing-default">
+                        مدت
+                    </span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default" value="" id="article-info-timer" disabled>
+                </div>
+            </div>
+
+            {% endif %}
+            {% else %}
+            <div class="col-4">
+                <div class="input-group mb-3">
+                    <span class="input-group-text " id="inputGroup-sizing-default">زمان تقریبی</span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default"  value=" ۳ تا ۶ دقیقه" disabled>
+                </div>
+            </div>
+
+
+            <div class="col-5">
+                <div class="input-group mb-3 info-detail" style="display: none;">
+                    <span class="input-group-text" id="inputGroup-sizing-default">تاریخ تولید</span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default" id="article-info-date" 
+                        value="" disabled>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="input-group mb-3 info-detail" style="display: none;">
+                    <span class="input-group-text" id="inputGroup-sizing-default">
+                        مدت
+                    </span>
+                    <input type="text" class="form-control text-center text-light-emphasis bg-light-subtle" aria-label="Sizing example input"
+                        aria-describedby="inputGroup-sizing-default" value="" id="article-info-timer" disabled>
+                </div>
+            </div>
+
+
+            {% endif %}
+        </div>
         <div class="rounded card-shadow position-relative p-1">
             <div id="loading-content" class="text-center mr-auto mx-auto"
                 style="display: none; height: 100%; width: 100%; position: absolute; background-color: rgba(255, 255, 255, 0.8); z-index: 100;">
@@ -75,39 +170,103 @@
 
     // Initialize Tagify
     var input = document.getElementById('tags-input');
-    new Tagify(input);
+    var tagify = new Tagify(input);
+
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        {% if content %}
+
+        $('#submission_form').find('input, textarea, button, select').prop('disabled', true);
+        tagify.setReadonly(true);
+
+        {% if content.job.job_status != "SUCCESS" %}
+        $('#loading-content').show();
+        checkJobStatus('{{ content.job.job_id }}', '{{ content.id }}');
+        startTimer('{{ content.job.created_at }}')
+
+        {% endif %}
+        {% endif %}
+    });
 
     $('#submission_form').submit(function (e) {
         e.preventDefault();
 
         // Show the loading content
         $('#loading-content').show();
-        $('#submit-form').addClass('disable')
+        $('#submit-form').addClass('disable');
+        tagify.setReadonly(true);
+
         // Serialize the form data
         var formData = $(this).serialize();
+        $(this).find('input, textarea, button, select').prop('disabled', true);
 
         // Submit the form using AJAX
         $.ajax({
             type: "POST",
-            url: "{{url_for('dashboard.article_blog')}}",
+            url: "{{ url_for('dashboard.article_blog') }}",
             data: formData,
             success: function (data) {
-                // Handle the successful response
                 const jobId = data.job_id;
                 const contentId = data.content_id;
+                const job_date = data.job_date;
+
+
+                $('.info-detail').show();
+                $('#article-info-date').val(job_date);
+                $('#article-info-timer').show();
+
+
+                startTimer();
                 checkJobStatus(jobId, contentId);
             },
             error: function (xhr, status, error) {
-                // Handle the error response
-                console.error(error);
+                $('#loading-content').hide();
+                $('#submission_form').find('input, textarea, button, select').prop('disabled', false);
+                tagify.setReadonly(false);
             }
         });
     });
 
+    function startTimer(startDate = null) {
+        if (startDate) {
+            var start = new Date(startDate);
+        } else {
+            var start = new Date();
+        }
+        setInterval(function () {
+            var now = new Date();
+            var elapsed = Math.floor((now - start) / 1000);
+            var hours = Math.floor(elapsed / 3600);
+            var minutes = Math.floor((elapsed % 3600) / 60);
+            var seconds = elapsed % 60;
+
+            function pad(number) {
+                return number < 10 ? '0' + number : number;
+            }
+
+            function toPersianNumber(number) {
+                var persianMap = {
+                    '0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴',
+                    '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹'
+                };
+                return number.toString().split('').map(char => persianMap[char] || char).join('');
+            }
+
+            var time = `${toPersianNumber(pad(minutes))}:${toPersianNumber(pad(seconds))}`
+            $("#article-info-timer").val(time)
+        }, 1000);
+    }
+
     function checkJobStatus(jobId, contentId) {
-        $.get(`/dashboard/article/blog/status/${jobId}`, function (data) {
+        $.get(`/dashboard/article/blog/status/cid/${jobId}`, function (data) {
             if (data.status === 'SUCCESS') {
+                $('#article-info-timer').html(data.running_duration);
                 fetchContent(contentId);
+            } else if (data.status === 'FAILURE') {
+                $('#loading-content').hide();
+                $('#submission_form').find('input, textarea, button, select').prop('disabled', false);
+                tagify.setReadonly(false);
             } else {
                 setTimeout(() => checkJobStatus(jobId, contentId), 2000);
             }
@@ -118,6 +277,9 @@
         $.get(`/dashboard/article/blog/content/${contentId}`, function (data) {
             $('#loading-content').hide();
             editor.setData(data.content);
+            tagify.setReadonly(false);
+            $('#word-count').val(data.content.word_count)
+            $('#submission_form').find('input, textarea, button, select').prop('disabled', false);
         });
     }
 </script>

@@ -1,9 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SubmitField, FieldList, FormField, TextAreaField, HiddenField
+from wtforms import StringField, SelectField, SubmitField, FieldList, FormField, TextAreaField, HiddenField, RadioField
 from wtforms.validators import DataRequired, Length, Email, Regexp, EqualTo, URL
-from wtforms import ValidationError
-from ..models import User
 from flask import flash
+from ..const import ARTICLE_BLOG_POST, ARTICLE_GENERAL, ARTICLE_PRO
 
 
 class URLFieldForm(FlaskForm):
@@ -15,27 +14,22 @@ class GenerateArticleBlog(FlaskForm):
     tags = StringField('کلمات کلیدی', validators=[DataRequired()])
     lang = SelectField('زبان', choices=[('fa', 'فارسی'), ('en', 'انگلیسی')])
     body = TextAreaField('محتوا')
-    content_type = HiddenField(default=0)
+    article_length = RadioField('Article Length', choices=[('short', 'پست کوتاه'), ('long', 'پست بلند')], default='short')
+    content_type = HiddenField(default=ARTICLE_BLOG_POST)
     submit = SubmitField('تولید مقاله')
     
 
 
-class GenerateArticle(FlaskForm):
-    user_topic = TextAreaField('عنوان', validators=[DataRequired(), Length(1, 500)])
-    tags = StringField('کلمات کلیدی', validators=[DataRequired()])
-    lang = SelectField('زبان', choices=[('fa', 'فارسی'), ('en', 'انگلیسی')])
-    body = TextAreaField('محتوا')
-    content_type = HiddenField(default=1)
-    submit = SubmitField('تولید مقاله')
 
 
 class GenerateArticlePro(FlaskForm):
     user_topic = TextAreaField('عنوان', validators=[DataRequired(), Length(1, 500)])
     urls = FieldList(FormField(URLFieldForm), min_entries=1, max_entries=10)
+    main_tag = StringField('کلمه کلیدی اصلی', validators=[DataRequired()])
     tags = StringField('کلمات کلیدی', validators=[DataRequired()])
     lang = SelectField('زبان', choices=[('fa', 'فارسی'), ('en', 'انگلیسی')])
     body = TextAreaField('محتوا')
-    content_type = HiddenField(default=2)
+    content_type = HiddenField(default=ARTICLE_PRO)
     submit = SubmitField('تولید مقاله')
 
     def __init__(self, *args, **kwargs):

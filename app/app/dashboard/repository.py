@@ -3,8 +3,98 @@ from sqlalchemy import or_
 from .. import db, contents_collection
 from app.models import Content, Job
 from bson import ObjectId
-import json
+import json, requests, os, random, time
+from openai import OpenAI
+from bs4 import BeautifulSoup
 
+API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API = os.getenv("OPENROUTER_API")
+
+# Initialize OpenAI and Redis clients
+openai_client = OpenAI(base_url=OPENROUTER_API, api_key=API_KEY)
+
+
+def suggest_outlines(user_title, lang, llm_type="gpt-4o"):
+
+    user_prompt = f"The content language is {lang}\n"
+    user_prompt += f"Use numbering for list. \n"
+    random.seed(int(time.time()))
+    rand = random.randint(13, 15)
+    user_prompt += (
+        f"Generate 5 detailed outline for a blog post on the following topic: {user_title}.\n"
+        f"The outline should include an introduction, {rand} main headline and no sub headline , and a conclusion.\n"
+        f"Ensure each section flows logically and covers the topic comprehensively.\n"
+    )
+
+    assistant_prompt = (
+        f"You write SEO-optimized blog posts's title. Ensure correct grammar.\n"
+        f"Only return the outlines and in json,.\n\n"
+    )
+
+    messages = [
+        {"role": "assistant", "content": assistant_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    try:
+        response = openai_client.chat.completions.create(
+            model=llm_type, messages=messages, temperature=0.8
+        )
+        result = response.choices[0].message.content
+        return result
+    except Exception as e:
+        print(f"Error calling OpenAI API: {str(e)}")
+        return None
+    
+
+
+
+def suggest_titles(topic, lang, llm_type="gpt-4o"):
+    user_prompt = (
+        f"Generate 10 catchy and informative title for a blog post about {topic}. "
+        f"The title should be engaging and appealing to the general audience and "
+        f"should reflect a professional tone. The content language is {lang}\n"
+    )
+    assistant_prompt = (
+        "You write SEO-optimized titles for articles. Ensure correct grammar. "
+        "Only return the in <h1> tags.\n"
+        "<h1> .. </h1>\n"
+        "<h1> .. </h1>\n"
+        "<h1> .. </h1>\n"
+    )
+
+    messages = [
+        {"role": "assistant", "content": assistant_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model=llm_type, messages=messages, temperature=0.8
+        )
+        result = response.choices[0].message.content
+        print(result)
+        soup = BeautifulSoup(result, "html.parser")
+        headlines_elements = soup.find_all(["h1"])
+        titles = []
+        for headline_element in headlines_elements:
+            headline_text = headline_element.get_text()
+            titles.append(headline_text)
+        print(titles)
+        return titles
+    except Exception as e:
+        print(f"Error calling OpenAI API: {str(e)}")
+        return None
+    
+
+def search_resources(topic):
+    base_url = os.getenv("WEB_SEARCH_API")
+    print(base_url)
+    search = f"{base_url}?q={topic}&format=json"
+    print(search)
+    response = requests.get(search)
+    result = json.loads(response.text)
+    # print(_resp)
+    return result['results']
 
 def get_user_contents(user, search_query='', sort_order='desc', page=1, per_page=5):
     query = Content.query.filter_by(author_id=user.id)
@@ -48,6 +138,7 @@ def update_content(content_id, user_input):
         db.session.rollback()
         raise e
 
+
 def create_content(user_input, author):
     # Extract body from user input
     body = user_input.get('body')
@@ -69,8 +160,18 @@ def create_job_record(job_id, content):
     db.session.commit()
     return job_record
 
-def get_job_by_id(job_id):
+def get_job_by_id(id):
+    return Job.query.filter_by(id=id).first()
+
+
+def get_job_by_cid(job_id):
     return Job.query.filter_by(job_id=job_id).first()
+
+
+
+def get_content_info(content_id):
+    content = Content.query.get_or_404(content_id)
+    return content
 
 def get_content_by_id(content_id):
     content = Content.query.get_or_404(content_id)

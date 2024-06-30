@@ -1,5 +1,5 @@
 from datetime import datetime
-import hashlib
+import hashlib, json
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.mysql import LONGTEXT
@@ -9,6 +9,9 @@ from app.exceptions import ValidationError
 from . import db, mdb, login_manager, contents_collection
 from markdown import markdown
 from bson import ObjectId
+from .const import content_type_map
+from .utils import utils_gre2jalali, to_persian_numerals
+import jdatetime
 
 
 class Permission:
@@ -122,17 +125,20 @@ class User(UserMixin, db.Model):
         return True
 
     def generate_reset_token(self, expiration=3600):
-        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'reset': self.id}).decode('utf-8')
+        s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        return s.dumps({'confirm': self.id})
+        # s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'], expiration)
+        # return s.dumps({'reset': self.id}).decode('utf-8')
 
     @staticmethod
     def reset_password(token, new_password):
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token.encode('utf-8'))
+            # data = s.loads(token.encode('utf-8'))
+            data = s.loads(token.encode('utf-8'), max_age=current_app.config['MAIL_TOKEN_EXPIER_AGE'])
         except:
             return False
-        user = User.query.get(data.get('reset'))
+        user = User.query.get(data.get('confirm'))
         if user is None:
             return False
         user.password = new_password
@@ -235,8 +241,28 @@ class Content(db.Model):
     content_type = db.Column(db.Integer, nullable=True)
     word_count = db.Column(db.Integer, nullable=True)
     
+    def get_input(self, idx):
+        _inputs = json.loads(self.user_input)
+        return _inputs[idx]
+    
     def body(self):
         return self.get_body_from_mongo()
+
+    def get_info(self):
+        _inputs = json.loads(self.user_input)
+        created_date = utils_gre2jalali(self.timestamp)
+        render_status = {"SUCCESS": 'تولید شده', 'PENDING': 'در حال تولید'}
+        json_content = {
+            'job_created': self.job.created_at,
+            'job_status': render_status[self.job.job_status],
+            'word_count': to_persian_numerals(self.word_count),
+            'content_type': content_type_map[int(_inputs['content_type'])],
+            'inputs': self.user_input,
+            # 'body': self.get_body_from_mongo(),
+            # 'outlines': self.outlines,
+            'timestamp': created_date,
+        }
+        return json_content
 
     def to_json(self):
         json_content = {
@@ -310,7 +336,7 @@ class Job(db.Model):
     __tablename__ = 'jobs'
     id = db.Column(db.Integer, primary_key=True)
     job_status = db.Column(db.String(64))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
     running_duration = db.Column(db.Integer)
     job_id = db.Column(db.String(64))
     content_id = db.Column(db.Integer, db.ForeignKey('contents.id'))
